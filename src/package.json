@@ -1,0 +1,16 @@
+{
+  "name": "dclm-listeners",
+  "version": "1.0.0",
+  "description": "A project that updates listeners count in a database",
+  "main": "count.js",
+  "scripts": {
+    "start": "bun count.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^16.4.1",
+    "mysql": "^2.18.1"
+  },
+  "author": "Samuel John",
+  "license": "Apache 2"
+}

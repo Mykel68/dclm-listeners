@@ -1,0 +1,37 @@
+# ref: https://docs.docker.com/build/building/context/#dockerignore-files
+# ref: https://www.golinuxcloud.com/dockerignore-file/
+#! important
+**/dclm-*
+
+# files
+**/.env
+**/*.env
+**/*.md
+**/*.log*
+**/Makefile
+**/.gitignore
+**/Dockerfile
+**/.dockerignore
+**/docker-compose.yml
+**/.DS_Store
+**/.tool-versions
+**/.editorconfig
+**/.flaskenv*
+**/*.sublime-project
+**/*.sublime-workspace
+
+# folders
+docs/
+vendor/
+**/.git/
+**/.idea/
+**/.vscode/
+**/.vagrant/
+**/src/node_modules
+
+# laravel specific
+*/storage/app/*
+*/storage/framework/cache/*
+*/storage/framework/sessions/*
+*/storage/framework/views/*
+*/storage/logs/*

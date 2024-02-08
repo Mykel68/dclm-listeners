@@ -1,0 +1,9 @@
+# https://git-scm.com/docs/gitignore
+# files
+dclm-*
+.cache*
+**/*.env*
+**/.DS_Store*
+
+# folders
+_
