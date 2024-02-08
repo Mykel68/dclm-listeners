@@ -2,8 +2,10 @@ const express = require('express');
 const axios = require('axios');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const ListenersCount = require('./listenersCountModel'); 
 
 const app = express();
+app.use(express.static('public'));
 
 // Mongoose connection
 mongoose.connect(process.env.MONGO_URL, {
@@ -69,21 +71,21 @@ async function updateListenersCount() {
             const latestEntry = await ListenersCount.findOne({ date: startOfDay }).sort({ id: -1 }).limit(1);
 
             if (latestEntry && listeners.current > latestEntry.count) {
-                // Update the count and event in the database
-                await ListenersCount.findByIdAndUpdate(latestEntry.id, { count: listeners.current, event });
-                console.log('Updated listeners count and event in the database:', listeners.current, event);
-            } else if (!latestEntry) {
-                // Insert a new entry for the current date
-                await ListenersCount.create({ date: startOfDay, count: listeners.current, event });
-                console.log('New listeners count inserted:', listeners.current, event);
-            }
+              // Update the count and event in the database
+            await ListenersCount.findByIdAndUpdate(latestEntry.id, { count: listeners.current, event });
+            console.log('Updated listeners count and event in the database:', listeners.current, event);
+        } else if (!latestEntry) {
+            // Insert a new entry for the current date
+            await ListenersCount.create({ date: startOfDay, count: listeners.current, event });
+            console.log('New listeners count inserted:', listeners.current, event);
+        }
         } else {
-            console.log('Station is not live.');
+        console.log('Station is not live.');
         }
     } catch (error) {
         console.error('Error fetching data from the API:', error.message);
     }
-}
+    }
 
 // Set the interval to run the function every 10 seconds (adjust as needed)
 const intervalInMilliseconds = 30 * 1000; // 10 seconds
@@ -93,6 +95,18 @@ const server = app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
 });
 
+
+// Handle unhandled promise rejections globally
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err.message);
+    server.close(() => process.exit(1)); // Close the server and exit the process
+    });
+    
+  // Handle uncaught exceptions globally
+    process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err.message);
+    server.close(() => process.exit(1)); // Close the server and exit the process
+    });
 
 
 
