@@ -31,6 +31,11 @@
     p {
       color: #555;
     }
+
+    .not-live {
+      color: #ff0000;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -38,6 +43,7 @@
     <h1>Listeners Count</h1>
     <p id="listenersCount">Loading...</p>
     <p id="event">Event: Loading...</p>
+    <p id="liveStatus" class="not-live">Service is not live</p>
   </div>
 
   <script>
@@ -47,8 +53,18 @@
         const response = await fetch('/api/listenersCount');
         const data = await response.json();
 
-        document.getElementById('listenersCount').textContent = `Current Count: ${data.count}`;
+        document.getElementById('listenersCount').textContent = `Highest Count: ${data.count}`;
         document.getElementById('event').textContent = `Event: ${data.event}`;
+
+        // Display live status
+        const liveStatus = document.getElementById('liveStatus');
+        if (data.isLive) {
+          liveStatus.classList.add('not-live');
+          liveStatus.textContent = 'Service is not live';
+        } else {
+          liveStatus.classList.remove('not-live');
+          liveStatus.textContent = 'Service is live';
+        }
       } catch (error) {
         console.error('Error fetching data:', error.message);
       }

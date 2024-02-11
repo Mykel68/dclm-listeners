@@ -18,23 +18,22 @@ mongoose.connect(process.env.MONGO_URL, {
 });
 
 
-
 app.get('/api/listenersCount', async (req, res) => {
-    try {
-      // Fetch the latest entry from the database
-      const latestEntry = await ListenersCount.findOne().sort({ _id: -1 }).limit(1);
-  
-      // Respond with the latest count and event as JSON
-      res.json({
-        count: latestEntry ? latestEntry.count : 0,
-        event: latestEntry ? latestEntry.event : 'No event',
-      });
-    } catch (error) {
-      console.error('Error fetching listeners count:', error.message);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+  try {
+    // Fetch the latest entry from the database
+    const latestEntry = await ListenersCount.findOne().sort({ _id: -1 }).limit(1);
 
+    // Respond with the latest count, event, and live status as JSON
+    res.json({
+      count: latestEntry ? latestEntry.count : 0,
+      event: latestEntry ? latestEntry.event : 'No event',
+      isLive: latestEntry ? true : false,
+    });
+  } catch (error) {
+    console.error('Error fetching listeners count:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 // Function to check and update listeners count in the database
 async function updateListenersCount() {
     try {
@@ -66,19 +65,22 @@ async function updateListenersCount() {
               nextTuesday.setDate(nextTuesday.getDate() + 1);
             }
             
-            // Check if the current date is within the range of the special event
+            // Check if the current date is within the range of the special event(GCK)
             if (currentDate >= lastThursday && currentDate <= nextTuesday) {
               if ((currentHour >= 7 && currentHour < 12) || (currentHour >= 17 && currentHour < 21)) {
-                console.log('Special event is happening');
+                console.log('GCK ');
               } else {
-                console.log('Special event is not happening right now');
+                console.log('GCK is not happening right now');
               }
             } else {
-              console.log('Special event is not happening');
-            }// GCK event days
-            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-            const lastWeekStart = lastDayOfMonth - 6; 
-
+              console.log('GCK is not happening');
+            }
+            
+            // GCK event days
+            // 
+            //  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            //  const lastWeekStart = lastDayOfMonth - 6; 
+            
 
             // ... (your switch statement remains unchanged)
             switch (currentDay) {
@@ -156,7 +158,5 @@ process.on('unhandledRejection', (err) => {
     console.error('Uncaught Exception:', err.message);
     server.close(() => process.exit(1)); // Close the server and exit the process
     });
-
-
 
 
