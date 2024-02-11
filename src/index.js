@@ -53,6 +53,33 @@ async function updateListenersCount() {
             const currentDay = currentDate.getDay();
             const currentHour = currentDate.getHours();
 
+            // GCK events days
+           // Get the date of the last Thursday
+            let lastThursday = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+            while (lastThursday.getDay() !== 4) {
+              lastThursday.setDate(lastThursday.getDate() - 1);
+            }
+            
+            // Get the date of the following Tuesday
+            let nextTuesday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+            while (nextTuesday.getDay() !== 2) {
+              nextTuesday.setDate(nextTuesday.getDate() + 1);
+            }
+            
+            // Check if the current date is within the range of the special event
+            if (currentDate >= lastThursday && currentDate <= nextTuesday) {
+              if ((currentHour >= 7 && currentHour < 12) || (currentHour >= 17 && currentHour < 21)) {
+                console.log('Special event is happening');
+              } else {
+                console.log('Special event is not happening right now');
+              }
+            } else {
+              console.log('Special event is not happening');
+            }// GCK event days
+            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            const lastWeekStart = lastDayOfMonth - 6; 
+
+
             // ... (your switch statement remains unchanged)
             switch (currentDay) {
                     case 0: // Sunday
