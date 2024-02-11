@@ -17,6 +17,24 @@ mongoose.connect(process.env.MONGO_URL, {
     console.log(err.message);
 });
 
+
+
+app.get('/api/listenersCount', async (req, res) => {
+    try {
+      // Fetch the latest entry from the database
+      const latestEntry = await ListenersCount.findOne().sort({ _id: -1 }).limit(1);
+  
+      // Respond with the latest count and event as JSON
+      res.json({
+        count: latestEntry ? latestEntry.count : 0,
+        event: latestEntry ? latestEntry.event : 'No event',
+      });
+    } catch (error) {
+      console.error('Error fetching listeners count:', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
 // Function to check and update listeners count in the database
 async function updateListenersCount() {
     try {
@@ -91,8 +109,12 @@ async function updateListenersCount() {
 const intervalInMilliseconds = 30 * 1000; // 10 seconds
 setInterval(updateListenersCount, intervalInMilliseconds);
 
-const server = app.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`);
+
+
+
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 
