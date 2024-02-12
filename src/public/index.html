@@ -31,9 +31,13 @@
     p {
       color: #555;
     }
+    p:last-child{
+      color: green;
+      font-weight: bold;
+    }
 
     .not-live {
-      color: #ff0000;
+      color: #ff0000 !important;
       font-weight: bold;
     }
   </style>
@@ -49,25 +53,25 @@
   <script>
     // Use Fetch API to get the data from the server
     async function fetchData() {
-      try {
-        const response = await fetch('/api/listenersCount');
-        const data = await response.json();
+        try {
+            const response = await fetch('/api/listenersCount');
+            const data = await response.json();
 
-        document.getElementById('listenersCount').textContent = `Highest Count: ${data.count}`;
-        document.getElementById('event').textContent = `Event: ${data.event}`;
+            document.getElementById('listenersCount').textContent = `Highest Count: ${data.count}`;
+            document.getElementById('event').textContent = `Event: ${data.event}`;
 
-        // Display live status
-        const liveStatus = document.getElementById('liveStatus');
-        if (data.isLive) {
-          liveStatus.classList.add('not-live');
-          liveStatus.textContent = 'Service is not live';
-        } else {
-          liveStatus.classList.remove('not-live');
-          liveStatus.textContent = 'Service is live';
+            // Display live status
+            const liveStatus = document.getElementById('liveStatus');
+            if (data.isLive) {
+                liveStatus.classList.remove('not-live');
+                liveStatus.textContent = 'Service is live';
+            } else {
+                liveStatus.classList.add('not-live');
+                liveStatus.textContent = 'Service is not live';
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error.message);
         }
-      } catch (error) {
-        console.error('Error fetching data:', error.message);
-      }
     }
 
     // Update data every 10 seconds
@@ -75,6 +79,6 @@
 
     // Initial data fetch
     fetchData();
-  </script>
+</script>
 </body>
 </html>
