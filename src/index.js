@@ -119,7 +119,42 @@ async function updateListenersCount() {
                 console.log('New listeners count inserted:', listeners.current, event);
             }
         } else {
-            console.log('Station is not live.');
+             // Service is not live, check the date and set the event
+            const currentDate = new Date();
+            const currentDay = currentDate.getDay();
+            let event = '';
+
+            // Other regular events
+            switch (currentDay) {
+                case 0: // Sunday
+                    event = 'Sunday Worship Service';
+                    break;
+                case 1: // Monday
+                    event = 'Monday Bible Study';
+                    break;
+                case 2: // Tuesday
+                    event = 'Leaders Development';
+                    break;
+                case 3: // Wednesday
+                    event = 'Live Event';
+                    break;
+                case 4: // Thursday
+                    event = 'Revival Broadcast';
+                    break;
+                case 5: // Friday
+                    event = 'Live Event';
+                    break;
+                case 6: // Saturday
+                    event = 'Workers Training';
+                    break;
+                default:
+                    event = 'Live Event';
+                    break;
+            }
+
+            // Update the event in the database and reset the count to 0
+            await ListenersCount.create({ date: startOfDay, count: 0, event });
+            console.log('Service is not live. Updated event for the day:', event);
         }
     } catch (error) {
         console.error('Error fetching data from the API:', error.message);
