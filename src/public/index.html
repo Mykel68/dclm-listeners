@@ -63,7 +63,10 @@
         const data = await response.json();
 
         document.getElementById('listenersCount').textContent = `Highest Count: ${data.count}`;
-        document.getElementById('event').textContent = `Event: ${data.event}`;
+        
+        // Update the event text content
+        const eventElement = document.getElementById('event');
+        eventElement.textContent = `Event: ${data.isLive ? data.event : 'No event'}`;
 
         // Display live status
         const liveStatus = document.getElementById('liveStatus');

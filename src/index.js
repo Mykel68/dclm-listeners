@@ -16,10 +16,9 @@ mongoose.connect(process.env.MONGO_URL, {
 }).catch((err) => {
     console.log(err.message);
 });
-
 app.get('/api/listenersCount', async (req, res) => {
     try {
-        // Fetch the latest entry from the database
+        // Fetch the single document from the database
         const latestEntry = await ListenersCount.findOne().sort({ _id: -1 }).limit(1);
 
         // Respond with the latest count, event, and live status as JSON
@@ -34,7 +33,6 @@ app.get('/api/listenersCount', async (req, res) => {
     }
 });
 
-
 // Function to check and update listeners count in the database
 async function updateListenersCount() {
     try {
@@ -43,123 +41,71 @@ async function updateListenersCount() {
         const { live, listeners } = response.data;
 
         // Check if the station is live
-if (live.is_live) {
-    // Check if the count is within the same day
-    const currentDate = new Date();
-    const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+        if (live.is_live) {
+            // Fetch the single document from the database
+            const latestEntry = await ListenersCount.findOne().sort({ _id: -1 }).limit(1);
 
-    // Determine the event based on the day and time
-    let event = '';
-    const currentDay = currentDate.getDay();
-    const currentHour = currentDate.getHours();
+            // Determine the event based on the day and time
+            let event = '';
+            const currentDay = new Date().getDay();
+            const currentHour = new Date().getHours();
 
-    // GCK events days
-    // Get the date of the last Thursday
-    let lastThursday = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
-    while (lastThursday.getDay() !== 4) {
-        lastThursday.setDate(lastThursday.getDate() - 1);
-    }
-
-    // Get the date of the following Tuesday
-    let nextTuesday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
-    while (nextTuesday.getDay() !== 2) {
-        nextTuesday.setDate(nextTuesday.getDate() + 1);
-    }
-
-    // Check if the current date is within the range of the special event (GCK)
-    if (currentDate >= lastThursday && currentDate <= nextTuesday) {
-        if ((currentHour >= 7 && currentHour < 12) || (currentHour >= 17 && currentHour < 21)) {
-            event = 'GCK Event';
-        } else {
-            event = 'GCK is not happening right now';
-        }
-    }
-
-    // Other regular events
-    switch (currentDay) {
-        case 0: // Sunday
-            if ((currentHour >= 7 && currentHour < 12) || (currentHour >= 17 && currentHour < 21)) {
-                event = 'Sunday Worship Service';
-            } else {
-                event = 'Live Event';
+            // Update the event based on the day
+            switch (currentDay) {
+                case 0: // Sunday
+                    event = (currentHour >= 7 && currentHour < 12) ? 'Sunday Worship Service' : 'Live Event';
+                    break;
+                case 1: // Monday
+                    event = 'Monday Bible Study';
+                    break;
+                case 2: // Tuesday
+                    event = 'Leaders Development';
+                    break;
+                case 3: // Wednesday
+                    event = 'Live Event';
+                    break;
+                case 4: // Thursday
+                    event = 'Revival Broadcast';
+                    break;
+                case 5: // Friday
+                    event = 'Live Event';
+                    break;
+                case 6: // Saturday
+                    event = 'Workers Training';
+                    break;
+                default:
+                    event = 'Live Event';
+                    break;
             }
-            break;
-        case 1: // Monday
-            event = 'Monday Bible Study';
-            break;
-        case 2: // Tuesday
-            event = 'Leaders Development';
-            break;
-        case 3: // Wednesday
-            event = 'Live Event';
-            break;
-        case 4: // Thursday
-            event = 'Revival Broadcast';
-            break;
-        case 5: // Friday
-            event = 'Live Event';
-            break;
-        case 6: // Saturday
-            event = 'Workers Training';
-            break;
-        default:
-            event = 'Live Event';
-            break;
-    }
 
-    // Fetch the latest entry for the current date
-    const latestEntry = await ListenersCount.findOne({ date: startOfDay }).sort({ id: -1 }).limit(1);
+            // Update the count and event in the database
+            if (latestEntry) {
+                await ListenersCount.findByIdAndUpdate(latestEntry._id, { count: listeners.current, event });
+                console.log('Updated listeners count and event in the database:', listeners.current, event);
+            } else {
+                // If no document exists, create a new one
+                await ListenersCount.create({ count: listeners.current, event });
+                console.log('New document created:', listeners.current, event);
+            }
+        } else {
+            // If the service is not live, update the event to the day's event and reset the count
+            const currentDay = new Date().getDay();
+            let event = '';
+            switch (currentDay) {
+                case 0: event = 'Sunday Worship Service'; break;
+                case 1: event = 'Monday Bible Study'; break;
+                case 2: event = 'Leaders Development'; break;
+                case 3: event = 'Live Event'; break;
+                case 4: event = 'Revival Broadcast'; break;
+                case 5: event = 'Live Event'; break;
+                case 6: event = 'Workers Training'; break;
+                default: event = 'Live Event'; break;
+            }
 
-    if (latestEntry && listeners.current > latestEntry.count) {
-        // Update the count and event in the database
-        await ListenersCount.findByIdAndUpdate(latestEntry.id, { count: listeners.current, event });
-        console.log('Updated listeners count and event in the database:', listeners.current, event);
-    } else if (!latestEntry) {
-        // Insert a new entry for the current date
-        await ListenersCount.create({ date: startOfDay, count: listeners.current, event });
-        console.log('New listeners count inserted:', listeners.current, event);
-    }
-} else {
-    // Service is not live
-    const currentDate = new Date();
-    const currentDay = currentDate.getDay();
-    let event = '';
-
-    // Reset the count to 0 for the day
-    const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-
-    // Other regular events
-    switch (currentDay) {
-        case 0: // Sunday
-            event = 'Sunday Worship Service';
-            break;
-        case 1: // Monday
-            event = 'Monday Bible Study';
-            break;
-        case 2: // Tuesday
-            event = 'Leaders Development';
-            break;
-        case 3: // Wednesday
-            event = 'Live Event';
-            break;
-        case 4: // Thursday
-            event = 'Revival Broadcast';
-            break;
-        case 5: // Friday
-            event = 'Live Event';
-            break;
-        case 6: // Saturday
-            event = 'Workers Training';
-            break;
-        default:
-            event = 'Live Event';
-            break;
-    }
-
-    // Update the event in the database and reset the count to 0
-    await ListenersCount.create({ date: startOfDay, count: 0, event });
-    console.log('Service is not live. Updated event for the day:', event);
-}
+            // Update the event and reset the count to 0
+            await ListenersCount.findOneAndUpdate({}, { count: 0, event });
+            console.log('Service is not live. Updated event for the day:', event);
+        }
     } catch (error) {
         console.error('Error fetching data from the API:', error.message);
     }
