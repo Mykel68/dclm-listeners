@@ -1,11 +1,15 @@
 const express = require('express');
 const axios = require('axios');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 require('dotenv').config();
 const ListenersCount = require('./listenersCountModel');
 
 const app = express();
 app.use(express.static('public'));
+// Middleware to parse JSON and URL-encoded data
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Mongoose connection
 mongoose.connect(process.env.MONGO_URL, {
@@ -15,6 +19,27 @@ mongoose.connect(process.env.MONGO_URL, {
     console.log('MongoDB connected');
 }).catch((err) => {
     console.log(err.message);
+});
+
+// API endpoint for user login
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        // Find a user with the provided username and password
+        const user = await UserModel.findOne({ username, password });
+
+        if (user) {
+            // User found, redirect to the dashboard
+            res.redirect('/dashboard.html');
+        } else {
+            // User not found, handle accordingly (e.g., show an error message)
+            res.status(401).send('Invalid username or password');
+        }
+    } catch (error) {
+        console.error('Error during login:', error.message);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.get('/api/listenersCount', async (req, res) => {
