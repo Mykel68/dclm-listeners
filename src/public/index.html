@@ -56,7 +56,6 @@
   </div>
 
   <script>
-    // Use Fetch API to get the data from the server
     async function fetchData() {
       try {
         const response = await fetch('/api/listenersCount');
@@ -67,10 +66,10 @@
 
         // Display live status
         const liveStatus = document.getElementById('liveStatus');
-        if (data.isLive) {
+        if (data) {
           liveStatus.classList.remove('not-live');
           liveStatus.classList.add('live'); // Add 'live' class for green color
-          liveStatus.textContent = `Service is live - ${data.event}`;
+          liveStatus.textContent = `Service is live - Current count: ${data.count}`;
         } else {
           liveStatus.classList.remove('live'); // Remove 'live' class
           liveStatus.classList.add('not-live');
@@ -86,6 +85,6 @@
 
     // Initial data fetch
     fetchData();
-  </script>
+</script>
 </body>
 </html>
