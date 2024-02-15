@@ -70,7 +70,7 @@
         if (data.isLive) {
           liveStatus.classList.remove('not-live');
           liveStatus.classList.add('live'); // Add 'live' class for green color
-          liveStatus.textContent = 'Service is live';
+          liveStatus.textContent = `Service is live - ${data.event}`;
         } else {
           liveStatus.classList.remove('live'); // Remove 'live' class
           liveStatus.classList.add('not-live');

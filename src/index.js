@@ -33,7 +33,6 @@ app.get('/api/listenersCount', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-
 // Function to check and update listeners count in the database
 async function updateListenersCount() {
     try {
@@ -53,20 +52,10 @@ async function updateListenersCount() {
                 const currentDay = new Date().getDay();
                 const currentHour = new Date().getHours();
 
-                 // Check for the special event (GCK)
-                if (currentDay === 4) { // Thursday
-                    const today = new Date();
-                    const lastThursday = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                    const nextTuesday = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                    lastThursday.setDate(lastThursday.getDate() - ((lastThursday.getDay() - 4 + 7) % 7));
-                    nextTuesday.setDate(lastThursday.getDate() + 4 + 1);
-
-                    if (today >= lastThursday && today <= nextTuesday) {
-                        event = 'GCK';
-                    }
-                }
-                else {
-
+                // Check for the special event (GCK)
+                if (gck()) {
+                    event = 'GCK programme';
+                } else {
                     // Update the event based on the day
                     switch (currentDay) {
                         case 0: // Sunday
@@ -128,6 +117,14 @@ async function updateListenersCount() {
     } catch (error) {
         console.error('Error fetching data from the API:', error.message);
     }
+}
+
+// Function to check if the current date is the last Thursday of the month
+function gck() {
+    const today = new Date();
+    const lastThursday = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    lastThursday.setDate(lastThursday.getDate() - ((lastThursday.getDay() - 4 + 7) % 7));
+    return today.getDate() >= lastThursday.getDate();
 }
 
 // Set the interval to run the function every 10 seconds (adjust as needed)
