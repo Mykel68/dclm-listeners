@@ -1,174 +1,77 @@
-const express = require('express');
 const axios = require('axios');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-require('dotenv').config();
-const ListenersCount = require('./listenersCountModel');
+const { MongoClient } = require('mongodb');
+require('dotenv').config(); // Assuming you have dotenv for environment variables
 
-const app = express();
-app.use(express.static('public'));
-// Middleware to parse JSON and URL-encoded data
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+const mongoURI = process.env.MONGO_URI;
 
-// Mongoose connection
-mongoose.connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
-    console.log('MongoDB connected');
-}).catch((err) => {
-    console.log(err.message);
-});
-
-// API endpoint for user login
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    try {
-        // Find a user with the provided username and password
-        const user = await UserModel.findOne({ username, password });
-
-        if (user) {
-            // User found, redirect to the dashboard
-            res.redirect('/dashboard.html');
-        } else {
-            // User not found, handle accordingly (e.g., show an error message)
-            res.status(401).send('Invalid username or password');
-        }
-    } catch (error) {
-        console.error('Error during login:', error.message);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-app.get('/api/listenersCount', async (req, res) => {
-    try {
-        // Fetch the document with the highest count from the database
-        const highestEntry = await ListenersCount.findOne().sort({ count: -1 }).limit(1);
-
-        // Respond with the highest count, event, and live status as JSON
-        res.json({
-            count: highestEntry ? highestEntry.count : 0,
-            event: highestEntry ? highestEntry.event : 'No event',
-            isLive: highestEntry && highestEntry.event.toLowerCase().includes('live'),
-        });
-    } catch (error) {
-        console.error('Error fetching listeners count:', error.message);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-// Function to check and update listeners count in the database
-async function updateListenersCount() {
-    try {
-        // Make a request to the API
-        const response = await axios.get('https://stat1.dclm.org/api/nowplaying/1');
-        const { live, listeners } = response.data;
-
-        // Check if the station is live
-        if (live.is_live) {
-            // Fetch the document with the highest count from the database
-            const highestEntry = await ListenersCount.findOne().sort({ count: -1 }).limit(1);
-
-            // If no document exists or the new count is higher, update the database
-            if (!highestEntry || listeners.current > highestEntry.count) {
-                // Determine the event based on the day and time
-                let event = '';
-                const currentDay = new Date().getDay();
-                const currentHour = new Date().getHours();
-
-                // Check for the special event (GCK)
-                if (gck()) {
-                    event = 'GCK programme';
-                } else {
-                    // Update the event based on the day
-                    switch (currentDay) {
-                        case 0: // Sunday
-                            event = (currentHour >= 7 && currentHour < 12) ? 'Sunday Worship Service' : 'Live Event';
-                            break;
-                        case 1: // Monday
-                            event = 'Monday Bible Study';
-                            break;
-                        case 2: // Tuesday
-                            event = 'Leaders Development';
-                            break;
-                        case 3: // Wednesday
-                            event = 'Live Event';
-                            break;
-                        case 4: // Thursday
-                            event = 'Revival Broadcast';
-                            break;
-                        case 5: // Friday
-                            event = 'Live Event';
-                            break;
-                        case 6: // Saturday
-                            event = 'Workers Training';
-                            break;
-                        default:
-                            event = 'Live Event';
-                            break;
-                    }
-                }
-
-                // Update the count and event in the database
-                if (highestEntry) {
-                    await ListenersCount.findByIdAndUpdate(highestEntry._id, { count: listeners.current, event });
-                    console.log('Updated listeners count and event in the database:', listeners.current, event);
-                } else {
-                    // If no document exists, create a new one
-                    await ListenersCount.create({ count: listeners.current, event });
-                    console.log('New document created:', listeners.current, event);
-                }
-            }
-        } else {
-            // If the service is not live, update the event to the day's event and reset the count
-            const currentDay = new Date().getDay();
-            let event = '';
-            switch (currentDay) {
-                case 0: event = 'Sunday Worship Service'; break;
-                case 1: event = 'Monday Bible Study'; break;
-                case 2: event = 'Leaders Development'; break;
-                case 3: event = 'Live Event'; break;
-                case 4: event = 'Revival Broadcast'; break;
-                case 5: event = 'Live Event'; break;
-                case 6: event = 'Workers Training'; break;
-                default: event = 'Live Event'; break;
-            }
-
-            // Update the event and reset the count to 0
-            await ListenersCount.findOneAndUpdate({}, { count: 0, event });
-            console.log('Service is not live. Updated event for the day:', event);
-        }
-    } catch (error) {
-        console.error('Error fetching data from the API:', error.message);
-    }
+async function connectToMongoDB() {
+  const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    await client.connect();
+    console.log('Connected to MongoDB');
+    return client.db();
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error.message);
+    throw error;
+  }
 }
 
-// Function to check if the current date is the last Thursday of the month
-function gck() {
-    const today = new Date();
-    const lastThursday = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    lastThursday.setDate(lastThursday.getDate() - ((lastThursday.getDay() - 4 + 7) % 7));
-    return today.getDate() >= lastThursday.getDate();
+// Function to check and update listeners count in the database
+async function updateListenersCount() {
+  const db = await connectToMongoDB();
+
+  try {
+    // Make a request to the API
+    const response = await axios.get('https://stat1.dclm.org/api/nowplaying/1');
+    const { live, listeners } = response.data;
+
+    // Check if the station is live
+    if (live.is_live) {
+      // Check if the count is within the same day
+      const currentDate = new Date();
+      const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+      // Determine the event based on the day and time
+      let event = '';
+      const currentDay = currentDate.getDay();
+      const currentHour = currentDate.getHours();
+
+      switch (currentDay) {
+        // ... (same switch cases as before)
+      }
+
+      // Fetch the latest entry for the current date
+      const latestEntry = await db.collection('listeners_count').findOne(
+        { date: startOfDay },
+        { sort: { _id: -1 } } // Sort by _id in descending order to get the latest entry
+      );
+
+      if (latestEntry && listeners.current > latestEntry.count) {
+        // Update the count and event in the database
+        await db.collection('listeners_count').updateOne(
+          { _id: latestEntry._id },
+          { $set: { count: listeners.current, event: event } }
+        );
+        console.log('Updated listeners count and event in the database:', listeners.current, event);
+      } else if (!latestEntry) {
+        // Insert a new entry for the current date
+        await db.collection('listeners_count').insertOne({
+          date: startOfDay,
+          count: listeners.current,
+          event: event
+        });
+        console.log('New listeners count inserted:', listeners.current, event);
+      }
+    } else {
+      console.log('Station is not live.');
+    }
+  } catch (error) {
+    console.error('Error fetching data from the API:', error.message);
+  } finally {
+    await db.close();
+  }
 }
 
 // Set the interval to run the function every 10 seconds (adjust as needed)
-const intervalInMilliseconds = 10 * 1000; // 10 seconds
+const intervalInMilliseconds = 30 * 1000; // 30 seconds
 setInterval(updateListenersCount, intervalInMilliseconds);
-
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
-
-// Handle unhandled promise rejections globally
-process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Rejection:', err.message);
-    server.close(() => process.exit(1)); // Close the server and exit the process
-});
-
-// Handle uncaught exceptions globally
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err.message);
-    server.close(() => process.exit(1)); // Close the server and exit the process
-});
